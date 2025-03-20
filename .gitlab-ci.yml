@@ -1,0 +1,33 @@
+stages:
+  - setup
+  - test_ba_client
+  - test_sp_client
+  - test_sp_schedule
+  - test_on_demand_backup
+  - test_sp_server_install
+
+variables:
+  ANSIBLE_HOST_KEY_CHECKING: "False"
+
+before_script:
+  - apt-get update && apt-get install -y ansible
+  - ansible-galaxy install -r requirements.yml
+
+fetch_ansible_modules:
+  stage: setup
+  script:
+    - ansible-galaxy install -r requirements.yml
+
+test_ba_client:
+  stage: test_ba_client
+  script:
+    - ansible-playbook -i inventory.ini playbook.yml --extra-vars "ba_client_start_daemon=true ba_client_state=present ba_client_version=8.1.23.0 ba_client_tar_repo=/custom/path/to/ba_client_repo"
+
+test_sp_client:
+  stage: test_sp_client
+  script:
+    - ansible-playbook -i inventory.ini playbook.yml --extra-vars "storage_protect_server_name=CustomServer storage_protect_server_ip=192.168.1.100 storage_protect_username=username storage_protect_password=password"
+
+only:
+  changes:
+    - inventory.ini
