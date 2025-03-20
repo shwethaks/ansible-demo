@@ -1,0 +1,95 @@
+name: GitOps Ansible Deployment
+
+on:
+  push:
+    branches:
+      - main  # Change to the specific branch you want
+    paths:
+      - "inventory.ini"
+  pull_request:
+    branches:
+      - main  # Change to the specific branch you want
+    paths:
+      - "inventory.ini"
+
+jobs:
+  test_ba_client:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Ansible
+        run: sudo apt update && sudo apt install -y ansible
+
+      - name: Verify Ansible Installation
+        run: ansible --version
+
+      - name: Install Required Ansible Collections
+        run: |
+          ansible-galaxy collection install ibm.storage_protect
+          ansible-galaxy collection install ansible.posix
+
+      - name: Download IBM BA Client Tar Files
+        run: |
+          mkdir -p /custom/path/to/ba_client_repo
+          wget -P /custom/path/to/ba_client_repo https://public.dhe.ibm.com/storage/tivoli-storage-management/maintenance/client/v8r1/Linux/LinuxX86/BA/
+
+      - name: Run BA Client Ansible Playbook
+        run: ansible-playbook -i inventory.ini playbook.yml --extra-vars "ba_client_start_daemon=true ba_client_state=present ba_client_version=8.1.23.0 ba_client_tar_repo=/custom/path/to/ba_client_repo"
+
+  test_sp_client:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Ansible
+        run: sudo apt update && sudo apt install -y ansible
+
+      - name: Verify Ansible Installation
+        run: ansible --version
+
+      - name: Install Required Ansible Collections
+        run: |
+          ansible-galaxy collection install ibm.storage_protect
+          ansible-galaxy collection install ansible.posix
+
+      - name: Run SP Client Ansible Playbook
+        run: ansible-playbook -i inventory.ini playbook.yml --extra-vars "storage_protect_server_name=CustomServer storage_protect_server_ip=192.168.1.100 storage_protect_username=username storage_protect_password=password"
+
+  test_sp_schedule:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Ansible
+        run: sudo apt update && sudo apt install -y ansible
+
+      - name: Run SP Schedule Test
+        run: ansible-playbook -i inventory.ini playbook.yml --extra-vars "test_sp_schedule=true"
+
+  test_on_demand_backup:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Ansible
+        run: sudo apt update && sudo apt install -y ansible
+
+      - name: Run On-Demand Backup Test
+        run: ansible-playbook -i inventory.ini playbook.yml --extra-vars "test_on_demand_backup=true"
+
+  test_sp_server_install:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Ansible
+        run: sudo apt update && sudo apt install -y ansible
+
+      - name: Run SP Server Install Test
+        run: ansible-playbook -i inventory.ini playbook.yml --extra-vars "test_sp_server_install=true"
